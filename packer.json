@@ -1,0 +1,51 @@
+{
+  "description": "GitLab, provisioned by Docker Compose and Ansible",
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "region": "us-west-2",
+      "source_ami": "ami-0c2aba6c",
+      "instance_type": "m4.large",
+      "ssh_username": "centos",
+      "ami_name": "{{timestamp}} - GitLab via Docker Compose and Ansible",
+      "ami_description": "GitLab, provisioned by Docker Compose and Ansible",
+      "spot_price": "auto",
+      "spot_price_auto_product": "Linux/UNIX (Amazon VPC)",
+      "tags": {
+        "encrypted": true,
+        "os": "centos7",
+        "docker": true
+      },
+      "run_tags": {
+        "encrypted": true,
+        "os": "centos7",
+        "docker": true
+      },
+      "encrypt_boot": true,
+      "launch_block_device_mappings": [
+        {
+          "device_name": "/dev/sda1",
+          "volume_size": 15,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        }
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "curl https://bootstrap.pypa.io/get-pip.py | sudo python -",
+        "sudo yum install -y python-devel gcc gcc-c++ make libffi-devel",
+        "sudo pip install wheel",
+        "sudo pip install ansible~=2.3"
+      ]
+    },
+    {
+      "type": "ansible-local",
+      "playbook_file": "playbook.yml",
+      "galaxy_file": "requirements.yml"
+    }
+  ]
+}

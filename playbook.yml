@@ -1,0 +1,59 @@
+---
+- name: GitLab pre-installed via Docker Compose
+  hosts: all
+  connection: local
+  become: true
+  vars:
+    service_env: dev
+    ci_runner_registration_token: 'tbd'
+    hostport_http: '80'
+    hostport_https: '443'
+    hostport_ssh: '22'
+    gitlab_omnibus_config: |
+      gitlab_rails['gravatar_enabled'] = true
+
+    users:
+      - user_name: sam
+        # this makes me squirm a bit, but whatever. they're *public* keys...
+        user_authorized_keys:
+          - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCVDRa7v28MDo9/YKlY6kM/uy2SO/tbae+EACf0WrJS55uXdN4dlz7vTh1igmiY08WUxIfTbEVuAn64TavJI5XUiWkamwoqw8pGUWGAjiT7GDGiS45ciBO/4YYGe71A9LpQv08wwUIOGq2DWQ1lzEojGAskeCiJc8qo8mCeT7iVDNqdPMRNSUSQ5OwQugebwsagk7at1D8cQn1X3FZHsC93oJMUDkLjiA52KsN2EqhYRBs0mdOoh8HAJChx0ea6JMok80US3MJwtdEUw2X3XjBatGrbLHWSE7ZoAY+ki9j5mvTSWPvnxRVtZn31Xcllt9nimV7CKUSnJgwRaaq1k09p sam@clarke'
+          - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCzyW3FxFPoR1ui51ChCiJGoei4dJUZVPJEE1p4ngnHonNYioHVoqRiXa/cgPB3StJOj9PUAeRc6Hzo4yZmmXYySwox++R4CUo5PSIuFjqb/kCDGlaw+TB8NZlBsY9Ur/cRnHchch+W3WsemMXCBbIfrG2slbt84UZiM8BPsL0zGCuJeKUBc7Rz1riv6CNgth/VvA17HRf8bmSEzH09yMKMDsjMMi+lOv8KQSeIJQvETNx43qEDBecn+QvPiGavDbZnZOvQPoUV8Id2aetuddUM3Qzc5iM3k9DXtzxne0KAQY4YhmciVvZyTjKP9d7JHKXfNoUUh3PC7z01C/APKJ0p sam@termina'
+    pypi_packages:
+      - docker
+    dockermachine_install_dir: /usr/bin
+    docker_install_compose: true
+  tasks:
+    - name: Set up users
+      include_role: name='inhumantsar.local-user'
+      vars:
+        user_blockvar: '{{outer_item}}'
+      with_items: '{{users}}'
+      loop_control:
+        loop_var: 'outer_item'
+
+
+    - include_role: name=geerlingguy.docker
+    - include_role: name=andrewrothstein.docker-machine
+
+    - name: install pip
+      easy_install: name=pip
+
+    - name: install python pre-reqs
+      pip: name='{{item}}'
+      with_items: '{{pypi_packages}}'
+
+    - name: reconfigure ssh port to 2222
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?Port 22'
+        line: 'Port 2222'
+
+    - name: reassure selinux
+      shell: 'semanage port -a -t ssh_port_t -p tcp 2222'
+
+    - name: restart sshd
+      service:
+        name: sshd
+        state: restarted
+
+    - include_role: name=inhumantsar.docker-compose-gitlab
