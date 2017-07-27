@@ -1,4 +1,4 @@
 - src: inhumantsar.local-user
-- src: inhumantsar.docker-compose-gitlab
+- src: inhumantsar.bootstrap
 - src: geerlingguy.docker
 - src: andrewrothstein.docker-machine

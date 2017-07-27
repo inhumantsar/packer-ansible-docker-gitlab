@@ -4,14 +4,7 @@
   connection: local
   become: true
   vars:
-    service_env: dev
-    ci_runner_registration_token: 'tbd'
-    hostport_http: '80'
-    hostport_https: '443'
-    hostport_ssh: '22'
-    gitlab_omnibus_config: |
-      gitlab_rails['gravatar_enabled'] = true
-
+    bootstrap_playbook_repo: 'https://github.com/inhumantsar/ansible-play-docker-gitlab.git'
     users:
       - user_name: sam
         # this makes me squirm a bit, but whatever. they're *public* keys...
@@ -22,6 +15,8 @@
       - docker
     dockermachine_install_dir: /usr/bin
     docker_install_compose: true
+  role:
+    - inhumantsar.bootstrap
   tasks:
     - name: Set up users
       include_role: name='inhumantsar.local-user'
@@ -30,7 +25,6 @@
       with_items: '{{users}}'
       loop_control:
         loop_var: 'outer_item'
-
 
     - include_role: name=geerlingguy.docker
     - include_role: name=andrewrothstein.docker-machine
@@ -55,5 +49,3 @@
       service:
         name: sshd
         state: restarted
-
-    - include_role: name=inhumantsar.docker-compose-gitlab
