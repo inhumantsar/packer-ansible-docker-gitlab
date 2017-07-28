@@ -15,7 +15,7 @@
       - docker
     dockermachine_install_dir: /usr/bin
     docker_install_compose: true
-  role:
+  roles:
     - inhumantsar.bootstrap
   tasks:
     - name: Set up users
